@@ -80,7 +80,7 @@ export default function Chat() {
           {error && <p className="text-red-500">Error: {error.message}</p>}
           
           {object && object.map((obj, index) => {
-            if (obj?.type === "grade") {
+            if (obj) {
               return (
                 <CardDetails
                   key={index}
