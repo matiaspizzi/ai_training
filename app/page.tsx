@@ -79,14 +79,18 @@ export default function Chat() {
           
           {error && <p className="text-red-500">Error: {error.message}</p>}
           
-          {object && object.map(
-              (obj, index) => (
-                obj?.type ? (
-                    <CardDetails key={index} card={obj} img={sentFiles[index] ? sentFiles[index] : ""} />
-                ) : null
-              )
-            )
-          }
+          {object && object.map((obj, index) => {
+            if (obj?.type === "grade") {
+              return (
+                <CardDetails
+                  key={index}
+                  card={obj as Extract<typeof obj, { type: "grade" }>}
+                  img={sentFiles[index] ?? ""}
+                />
+              );
+            }
+            return null;
+          })}
         </div>
       </div>
 
