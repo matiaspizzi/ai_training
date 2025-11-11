@@ -2,7 +2,6 @@
 
 import { experimental_useObject as useObject } from '@ai-sdk/react';
 import { useState } from 'react';
-import { toast } from "sonner"
 import { ArrowUpIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { arrayToFileList, fileListToArray } from '@/lib/functions';
@@ -34,8 +33,6 @@ export default function Chat() {
 
   const handleSubmit = async () => {
     if (files && files.length > 0) {
-      toast("Images sent!");
-
       const base64Images = await Promise.all(
         Array.from(files).map(async (file) => {
           const arrayBuffer = await file.arrayBuffer();
