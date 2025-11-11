@@ -36,10 +36,6 @@ export async function POST(req: Request) {
         {
           role: "user",
           content: [
-            {
-              type: "text",
-              text: "Describe cada imagen con un resumen, colores principales y objetos detectados.",
-            },
             ...imageContents,
           ],
         },
