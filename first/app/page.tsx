@@ -31,6 +31,13 @@ export default function Chat() {
     setFiles(arrayToFileList(files));
   };
 
+  const handleRemoveFile = (index: number) => {
+    if (!files) return;
+    const filesArray = fileListToArray(files);
+    filesArray.splice(index, 1);
+    setFiles(filesArray.length > 0 ? arrayToFileList(filesArray) : undefined);
+  };
+
   const handleSubmit = async () => {
     if (files && files.length > 0) {
       const base64Images = await Promise.all(
@@ -108,6 +115,7 @@ export default function Chat() {
             maxFiles={5}
             onDrop={handleDrop}
             onError={console.error}
+            onRemoveFile={handleRemoveFile}
             src={files ? fileListToArray(files) : []}
           >
             <DropzoneEmptyState />

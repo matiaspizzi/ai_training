@@ -1,6 +1,6 @@
 'use client';
 
-import { UploadIcon } from 'lucide-react';
+import { UploadIcon, XIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { createContext, useContext } from 'react';
 import type { DropEvent, DropzoneOptions, FileRejection } from 'react-dropzone';
@@ -14,6 +14,7 @@ type DropzoneContextType = {
   maxSize?: DropzoneOptions['maxSize'];
   minSize?: DropzoneOptions['minSize'];
   maxFiles?: DropzoneOptions['maxFiles'];
+  onRemoveFile?: (index: number) => void;
 };
 
 const renderBytes = (bytes: number) => {
@@ -41,6 +42,7 @@ export type DropzoneProps = Omit<DropzoneOptions, 'onDrop'> & {
     fileRejections: FileRejection[],
     event: DropEvent
   ) => void;
+  onRemoveFile?: (index: number) => void;
   children?: ReactNode;
 };
 
@@ -55,6 +57,7 @@ export const Dropzone = ({
   src,
   className,
   children,
+  onRemoveFile,
   ...props
 }: DropzoneProps) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -79,7 +82,7 @@ export const Dropzone = ({
   return (
     <DropzoneContext.Provider
       key={JSON.stringify(src)}
-      value={{ src, accept, maxSize, minSize, maxFiles }}
+      value={{ src, accept, maxSize, minSize, maxFiles, onRemoveFile }}
     >
       <Button
         className={cn(
@@ -120,7 +123,7 @@ export const DropzoneContent = ({
   children,
   className,
 }: DropzoneContentProps) => {
-  const { src } = useDropzoneContext();
+  const { src, onRemoveFile } = useDropzoneContext();
 
   if (!src) {
     return null;
@@ -131,19 +134,39 @@ export const DropzoneContent = ({
   }
 
   return (
-    <div className={cn('flex flex-col items-center justify-center', className)}>
-      <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        <UploadIcon size={16} />
-      </div>
-      <p className="my-2 w-full truncate font-medium text-sm">
-        {src.length > maxLabelItems
-          ? `${new Intl.ListFormat('en').format(
-              src.slice(0, maxLabelItems).map((file) => file.name)
-            )} and ${src.length - maxLabelItems} more`
-          : new Intl.ListFormat('en').format(src.map((file) => file.name))}
-      </p>
-      <p className="w-full text-wrap text-muted-foreground text-xs">
-        Drag and drop or click to replace
+    <div className={cn('flex flex-col gap-2 w-full', className)}>
+      {src.map((file, index) => (
+        <div
+          key={`${file.name}-${index}`}
+          className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <UploadIcon size={12} />
+            </div>
+            <p className="truncate font-medium text-sm">{file.name}</p>
+          </div>
+          {onRemoveFile && (
+            <div className="flex items-center justify-center rounded-full">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="shrink-0 hover:scale-110 hover:bg-blue-100 transition-all duration-200 ease-in-out"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveFile(index);
+                }}
+              >
+                <XIcon size={14} />
+              </Button>
+            </div>
+          )}
+        </div>
+      ))}
+      <p className="w-full text-center text-wrap text-muted-foreground text-xs mt-2">
+        Drag and drop or click to add more
       </p>
     </div>
   );
