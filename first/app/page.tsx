@@ -26,9 +26,12 @@ export default function Chat() {
   const [files, setFiles] = useState<FileList | undefined>();
   const [sentFiles, setSentFiles] = useState<string[]>([]);
 
-  const handleDrop = (files: File[] | null) => {
-    if (!files) return;
-    setFiles(arrayToFileList(files));
+  const handleDrop = (uploadedFiles: File[] | null) => {
+    if (!uploadedFiles) return;
+    const existingFiles = files ? fileListToArray(files) : [];
+    const newFiles = uploadedFiles;
+    const allFiles = [...existingFiles, ...newFiles];
+    setFiles(arrayToFileList(allFiles));
   };
 
   const handleRemoveFile = (index: number) => {
@@ -104,7 +107,7 @@ export default function Chat() {
             e.preventDefault();
             handleSubmit();
           }}
-          className='flex w-full gap-2 items-start'
+          className='flex w-full gap-2 items-end'
         >
           <Dropzone
             accept={{
@@ -121,8 +124,8 @@ export default function Chat() {
             <DropzoneEmptyState />
             <DropzoneContent />
           </Dropzone>
-          
-          <div className='flex flex-col gap-2'>  
+
+          <div className='flex flex-col gap-2 mb-4'>
             <Button variant="outline" size="icon" aria-label="Submit" disabled={isLoading || !files || files.length === 0}>
               <ArrowUpIcon />
             </Button>
