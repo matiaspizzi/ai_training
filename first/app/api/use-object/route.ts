@@ -24,7 +24,6 @@ export async function POST(req: Request) {
       mimeType: img.type,
     }));
 
-    console.log("Image contents prepared:", imageContents);
     const result = await streamObject({
       model,
       schema: cardGradeSchema,

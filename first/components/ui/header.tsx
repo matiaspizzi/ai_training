@@ -1,13 +1,21 @@
 'use client';
 
 import Image from 'next/image';
+import { Button } from "@/components/ui/button"
+import { UploadCardModal } from '@/components/ui/upload-card-modal';
 
 export function Header() {
 
+
   return (
-      <div className='mt-5 flex self-left w-full'>
-        <Image alt="Logo" src="/logo.png" width={100} height={150} />
-        <h1 className="text-3xl font-bold mt-10">NBA Card Grader</h1>
+      <div className='p-5 flex w-full items-center justify-between'>
+        <div className='flex h-full items-center'>
+          <Image alt="Logo" src="/logo.png" width={100} height={150} />
+          <h1 className="text-3xl font-bold">NBA Card Grader</h1>
+        </div>
+        <UploadCardModal>
+          <Button>Upload Cards</Button>
+        </UploadCardModal>
       </div>
   );
 }
