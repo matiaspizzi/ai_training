@@ -16,7 +16,7 @@ model Card {
   year          String
   brand         String
   player        String
-  grade         Int?
+  grade         Int
   condition     String
   serialNumber  String
   createdAt     DateTime @default(now())

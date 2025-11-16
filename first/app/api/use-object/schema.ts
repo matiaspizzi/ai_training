@@ -11,7 +11,7 @@ export const NbaCardGradeSchema = z.object({
   year: z.string().describe('The release year of the card, represented as a string.'),
   brand: z.string().describe('The card brand and set name (e.g., "Topps Chrome", "Panini Prizm").'),
   player: z.string().describe('The full name of the NBA player on the card.'),
-  grade: z.number().min(1).max(10).optional().describe('The numerical grade of the card.'),
+  grade: z.number().min(0).max(10).describe('The numerical grade of the card. Return 0 if the grade is not available.'),
   condition: z.string().describe('e.g MINT, GEM, etc.'),
   serialNumber: z.string().describe('The serial number of the card.'),
 });
