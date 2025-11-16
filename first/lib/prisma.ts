@@ -1,14 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../app/generated/prisma/client'
+import { withAccelerate } from '@prisma/extension-accelerate'
 
-declare global {
-  // Evita múltiples instancias de Prisma en desarrollo
-  var prisma: PrismaClient | undefined;
-}
+const prisma = new PrismaClient().$extends(withAccelerate())
 
-const prisma = global.prisma || new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') {
-  global.prisma = prisma;
-}
-
-export default prisma;
+export default prisma

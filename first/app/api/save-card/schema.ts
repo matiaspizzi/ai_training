@@ -13,4 +13,5 @@ export const NbaCardCreateSchema = NbaCardDBSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  type: true,
 });

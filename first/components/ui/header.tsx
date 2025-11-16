@@ -10,8 +10,8 @@ export function Header() {
   return (
       <div className='p-5 flex w-full items-center justify-between'>
         <div className='flex h-full items-center'>
-          <Image alt="Logo" src="/logo.png" width={100} height={150} />
-          <h1 className="text-3xl font-bold">NBA Card Grader</h1>
+          <Image alt="Logo" src="/logo.webp" width={150} height={200} />
+          <h1 className="text-3xl font-bold">Card Grader</h1>
         </div>
         <UploadCardModal>
           <Button>Upload Cards</Button>

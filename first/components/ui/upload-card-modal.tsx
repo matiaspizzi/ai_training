@@ -68,6 +68,7 @@ export function UploadCardModal({
           };
         })
       );
+      setIsSaved(false);
       setSentFiles(base64Images.map(img => img.data));
 
       await submit({ images: base64Images });
@@ -85,7 +86,6 @@ export function UploadCardModal({
               base64image: sentFiles[index],
             };
             const parsed = NbaCardCreateSchema.safeParse(cardData);
-            console.log(parsed);
             return parsed.success ? parsed.data : null;
           }
           return null;
@@ -106,7 +106,7 @@ export function UploadCardModal({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ objectData: dataToSaveArray }),
+        body: JSON.stringify({ data: { cards: dataToSaveArray } }), // Enviar como un objeto
       });
 
       if (!response.ok) {
@@ -199,7 +199,7 @@ export function UploadCardModal({
           {object && object.length > 0 && (
             <DialogFooter className="flex items-center justify-center">
               {errorUpload && <p className="text-red-500">Error saving cards. Please try again. {errorUpload}</p>}
-              <Button className="min-w-[100px] flex items-center justify-center" onClick={handleSubmitSave}>{isSaving ? <Spinner /> : errorUpload ? <AlertCircleIcon /> : isSaved ? <CheckIcon /> : "Save Cards"}</Button>
+              <Button disabled={isSaving || isSaved} className="min-w-[100px] flex items-center justify-center" onClick={handleSubmitSave}>{isSaving ? <Spinner /> : errorUpload ? <AlertCircleIcon /> : isSaved ? <CheckIcon /> : "Save Cards"}</Button>
             </DialogFooter>)}
         </DialogContent>
       </form>
