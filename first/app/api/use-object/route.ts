@@ -10,7 +10,6 @@ const model = google("gemini-2.5-flash");
 
 export async function POST(req: Request) {
 
-  console.log("Received request to /api/use-object");
   try {
     const { images } = await req.json();
 

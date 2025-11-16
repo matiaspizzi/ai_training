@@ -1,6 +1,5 @@
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogTrigger,
@@ -21,11 +20,10 @@ import {
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { CopyButton } from '@/components/ui/copy-button';
-
-export type DataToSave = { // Debería ser el embedding de la metadata y el embedding de la imagen
-  metadata: typeof cardGradeSchema[];
-  img: string;
-}
+import { CheckIcon } from "lucide-react";
+import { AlertCircleIcon } from "lucide-react";
+import { z } from 'zod';
+import { NbaCardCreateSchema } from '../../app/api/save-card/schema';
 
 export function UploadCardModal({
   children,
@@ -38,7 +36,9 @@ export function UploadCardModal({
   });
   const [files, setFiles] = useState<FileList | undefined>();
   const [sentFiles, setSentFiles] = useState<string[]>([]);
-  const [dataToSave, setDataToSave] = useState<DataToSave[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [errorUpload, setErrorUpload] = useState("");
 
   const handleDrop = (uploadedFiles: File[] | null) => {
     if (!uploadedFiles) return;
@@ -75,16 +75,53 @@ export function UploadCardModal({
     }
   };
 
-  const handleSubmitSave = () => {
+  const handleSubmitSave = async () => {
+    if (object && object.length > 0) {
+      const dataToSaveArray = object
+        .map((obj, index) => {
+          if (obj?.type === "grade") {
+            const cardData = {
+              ...obj,
+              base64image: sentFiles[index],
+            };
+            const parsed = NbaCardCreateSchema.safeParse(cardData);
+            console.log(parsed);
+            return parsed.success ? parsed.data : null;
+          }
+          return null;
+        })
+        .filter((data): data is z.infer<typeof NbaCardCreateSchema> => data !== null);
+
+      if (dataToSaveArray.length === 0) {
+        setErrorUpload("No valid cards to save.");
+        return;
+      }
+
+      setIsSaving(true);
+      setErrorUpload("");
+      setIsSaved(false);
+
+      const response = await fetch('/api/save-card', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ objectData: dataToSaveArray }),
+      });
+
+      if (!response.ok) {
+        setErrorUpload(response.statusText);
+      } else {
+        setIsSaved(true);
+      }
+      setIsSaving(false);
+    }
   };
 
 
   return (
     <Dialog>
-      <form onSubmit={e => {
-        e.preventDefault();
-        handleSubmitSave();
-      }}>
+      <form >
         <DialogTrigger asChild>
           {children}
         </DialogTrigger>
@@ -159,11 +196,11 @@ export function UploadCardModal({
               </form>
             </div>
           </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="submit">Save changes</Button>
-            </DialogClose>
-          </DialogFooter>
+          {object && object.length > 0 && (
+            <DialogFooter className="flex items-center justify-center">
+              {errorUpload && <p className="text-red-500">Error saving cards. Please try again. {errorUpload}</p>}
+              <Button className="min-w-[100px] flex items-center justify-center" onClick={handleSubmitSave}>{isSaving ? <Spinner /> : errorUpload ? <AlertCircleIcon /> : isSaved ? <CheckIcon /> : "Save Cards"}</Button>
+            </DialogFooter>)}
         </DialogContent>
       </form>
     </Dialog>

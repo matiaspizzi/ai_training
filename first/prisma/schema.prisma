@@ -1,0 +1,28 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Card {
+  id            String   @id @default(cuid())
+  number        String
+  cardName      String
+  year          String
+  brand         String
+  player        String
+  grade         Int?
+  condition     String
+  serialNumber  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  base64image   String
+
+  @@index([player])
+  @@index([year])
+}

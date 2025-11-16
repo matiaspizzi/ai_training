@@ -1,9 +1,8 @@
 'use client';
 
 import { useRef } from 'react';
-import { experimental_useObject as useObject, useChat } from '@ai-sdk/react';
+import { useChat } from '@ai-sdk/react';
 import { useState } from 'react';
-import { cardGradeSchema } from './api/use-object/schema';
 import { Header } from '@/components/ui/header';
 import { type PromptInputMessage, PromptInput, PromptInputActionAddAttachments, PromptInputActionMenu, PromptInputActionMenuContent, PromptInputActionMenuTrigger, PromptInputAttachment, PromptInputAttachments, PromptInputBody, PromptInputFooter, PromptInputHeader, PromptInputSubmit, PromptInputTextarea, PromptInputTools } from '@/components/ai-elements/prompt-input';
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
