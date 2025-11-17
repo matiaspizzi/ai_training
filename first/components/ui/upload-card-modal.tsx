@@ -23,7 +23,7 @@ import { CopyButton } from '@/components/ui/copy-button';
 import { CheckIcon } from "lucide-react";
 import { AlertCircleIcon } from "lucide-react";
 import { z } from 'zod';
-import { NbaCardCreateSchema } from '../../app/api/save-card/schema';
+import { NbaCardSchemaDTO } from '../../app/api/save-card/schema';
 
 export function UploadCardModal({
   children,
@@ -86,12 +86,12 @@ export function UploadCardModal({
               ...obj,
               base64image: sentFiles[index],
             };
-            const parsed = NbaCardCreateSchema.safeParse(cardData);
+            const parsed = NbaCardSchemaDTO.safeParse(cardData);
             return parsed.success ? parsed.data : null;
           }
           return null;
         })
-        .filter((data): data is z.infer<typeof NbaCardCreateSchema> => data !== null);
+        .filter((data): data is z.infer<typeof NbaCardSchemaDTO> => data !== null);
 
       if (dataToSaveArray.length === 0) {
         setErrorUpload("No valid cards to save.");

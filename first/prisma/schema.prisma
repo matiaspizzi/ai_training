@@ -21,7 +21,7 @@ model Card {
   serialNumber  String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  base64image   String
+  imageUrl      String
 
   @@index([player])
   @@index([year])

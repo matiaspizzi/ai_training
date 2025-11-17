@@ -3,16 +3,21 @@
 import { NextResponse } from "next/server";
 import prisma from '../../../lib/prisma';
 import { pc } from '../../../lib/pinecone';
-import { getTransformTextEmbedding, getTransformVisualEmbedding, initializeEmbedders } from '../../../lib/embeddingService';
+import { getTransformTextEmbeddings, getTransformImageEmbeddings, initializeEmbedders } from '../../../lib/embeddingService';
 import { z } from 'zod';
-import { NbaCardCreateSchema } from './schema'; 
+import { NbaCardCreateSchema, NbaCardSchemaDTO } from './schema'; 
+import { uploadBase64ImageToS3, deleteImageFromS3, BUCKET_NAME } from '../../../lib/s3';
 
 const SaveCardSchema = z.object({
-  cards: z.array(NbaCardCreateSchema),
+  cards: z.array(NbaCardSchemaDTO),
 });
 
-const generateDescriptiveText = (card: z.infer<typeof NbaCardCreateSchema>): string => {
+const generateDescriptiveText = (card: z.infer<typeof NbaCardSchemaDTO>): string => {
   return `${card.player} ${card.year} ${card.brand} PSA ${card.grade} ${card.number} ${card.condition} ${card.serialNumber}`;
+};
+
+const validateEmbeddingDimension = (embedding: number[], expectedDimension: number): boolean => {
+  return embedding.length === expectedDimension;
 };
 
 
@@ -32,41 +37,76 @@ export async function POST(req: Request) {
     }
 
     const processingPromises = parsed.data.cards.map(async (cardData) => {
+      let imageS3Key: string = '';
+      let cardId: string = '';
+      try {
+        const descriptiveText = generateDescriptiveText(cardData);
 
-      const descriptiveText = generateDescriptiveText(cardData);
+        imageS3Key = await uploadBase64ImageToS3(cardData.base64image);
+        const imageUrl = `https://${BUCKET_NAME}.s3.amazonaws.com/${imageS3Key}`;
+        const { base64image, ...rest } = cardData;
+        const cardDataWithImageUrl: typeof NbaCardCreateSchema = {
+          ...rest,
+          imageUrl,
+        };
 
-      const [textEmbedding, visualEmbedding] = await Promise.all([
-        getTransformTextEmbedding(descriptiveText),
-        getTransformVisualEmbedding(cardData.base64image),
-      ]);
+        const [textEmbedding, visualEmbedding] = await Promise.all([
+          getTransformTextEmbeddings([descriptiveText]),
+          getTransformImageEmbeddings(cardDataWithImageUrl.imageUrl),
+        ]);
 
-      const createdCard = await prisma.card.create({
-        data: cardData as any
-      });
-      const cardId = createdCard.id;
+        // Validar dimensiones de los embeddings
+        const textIndexDimension = 384; // Cambia esto si el índice tiene otra dimensión
+        const visualIndexDimension = 768; // Cambia esto si el índice tiene otra dimensión
 
-      const textIndex = pc.index('text-index');
-      const visualIndex = pc.index('visual-index');
+        if (!validateEmbeddingDimension(textEmbedding, textIndexDimension)) {
+          throw new Error(`Text embedding dimension mismatch: expected ${textIndexDimension}, got ${textEmbedding.length}`);
+        }
 
-      await Promise.all([
-        textIndex.upsert([{
-          id: cardId,
-          values: textEmbedding,
-          metadata: {
-            player: createdCard.player,
-            year: createdCard.year,
-            grade: createdCard.grade ? createdCard.grade : 0
+        if (!validateEmbeddingDimension(visualEmbedding, visualIndexDimension)) {
+          throw new Error(`Visual embedding dimension mismatch: expected ${visualIndexDimension}, got ${visualEmbedding.length}`);
+        }
+
+        const createdCard = await prisma.card.create({
+          data: cardDataWithImageUrl
+        });
+        cardId = createdCard.id;
+        console.log(`Card stored in DB with ID: ${cardId}`);
+
+        const textIndex = pc.index('text-index');
+        const visualIndex = pc.index('visual-index');
+
+        await Promise.all([
+          textIndex.upsert([{
+            id: cardId,
+            values: textEmbedding,
+            metadata: {
+              player: createdCard.player,
+              year: createdCard.year,
+              grade: createdCard.grade ? createdCard.grade : 0
+            }
+          }]),
+          visualIndex.upsert([{
+            id: cardId,
+            values: visualEmbedding,
+            metadata: { type: 'visual_card' }
+          }])
+        ]);
+
+        console.log(`Card stored in Pinecone with ID: ${cardId}.`);
+        return createdCard;
+
+      } catch (error) {
+        await deleteImageFromS3(imageS3Key);
+        await prisma.card.deleteMany({
+          where: {
+            id: { contains: cardId }
           }
-        }]),
-        visualIndex.upsert([{
-          id: cardId,
-          values: visualEmbedding,
-          metadata: { type: 'visual_card' }
-        }])
-      ]);
+        });
 
-      console.log(`Carta ${cardId} guardada y vectorizada con Transform JS.`);
-      return createdCard;
+        console.log(`Rolled back DB entry for key: ${cardId}`);
+        throw error;
+      }
     });
 
     const savedCards = await Promise.all(processingPromises);
