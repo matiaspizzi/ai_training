@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         imageS3Key = await uploadBase64ImageToS3(cardData.base64image);
         const imageUrl = `https://${BUCKET_NAME}.s3.amazonaws.com/${imageS3Key}`;
         const { base64image, ...rest } = cardData;
-        const cardDataWithImageUrl: typeof NbaCardCreateSchema = {
+        const cardDataWithImageUrl: z.infer<typeof NbaCardCreateSchema> = {
           ...rest,
           imageUrl,
         };
