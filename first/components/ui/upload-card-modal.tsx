@@ -69,6 +69,7 @@ export function UploadCardModal({
         })
       );
       setIsSaved(false);
+      setErrorUpload("");
       setSentFiles(base64Images.map(img => img.data));
 
       await submit({ images: base64Images });
@@ -130,7 +131,7 @@ export function UploadCardModal({
 
           <div className='w-full p-4 text-center'>
 
-            <div className="px-4 max-h-[50vh] overflow-y-auto scrollbar gap-4 flex flex-col">
+            <div className="px-4 max-h-[50vh] overflow-y-auto scrollbar gap-4 flex flex-col w-full items-center justify-center">
               {!isLoading && !error && !object && <p className="text-slate-400">Upload images of NBA cards graded by PSA.</p>}
 
               {isLoading && !object &&

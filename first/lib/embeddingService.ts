@@ -2,7 +2,7 @@ import { type FeatureExtractionPipeline, type ImageFeatureExtractionPipeline, pi
 
 
 const TEXT_EMBEDDING_MODEL = 'Xenova/all-MiniLM-L6-v2';
-const VISION_MODEL = 'Xenova/clip-vit-base-patch32';
+const VISION_MODEL = 'Xenova/clip-vit-base-patch16';
 
 let textEmbedder: FeatureExtractionPipeline | null = null;
 let imageEmbedder: ImageFeatureExtractionPipeline | null = null;

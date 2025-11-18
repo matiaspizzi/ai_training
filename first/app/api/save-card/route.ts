@@ -1,5 +1,3 @@
-// /app/api/save-card/route.ts
-
 import { NextResponse } from "next/server";
 import prisma from '../../../lib/prisma';
 import { pc } from '../../../lib/pinecone';
@@ -14,10 +12,6 @@ const SaveCardSchema = z.object({
 
 const generateDescriptiveText = (card: z.infer<typeof NbaCardSchemaDTO>): string => {
   return `${card.player} ${card.year} ${card.brand} PSA ${card.grade} ${card.number} ${card.condition} ${card.serialNumber}`;
-};
-
-const validateEmbeddingDimension = (embedding: number[], expectedDimension: number): boolean => {
-  return embedding.length === expectedDimension;
 };
 
 
@@ -54,18 +48,6 @@ export async function POST(req: Request) {
           getTransformTextEmbeddings([descriptiveText]),
           getTransformImageEmbeddings(cardDataWithImageUrl.imageUrl),
         ]);
-
-        // Validar dimensiones de los embeddings
-        const textIndexDimension = 384; // Cambia esto si el índice tiene otra dimensión
-        const visualIndexDimension = 768; // Cambia esto si el índice tiene otra dimensión
-
-        if (!validateEmbeddingDimension(textEmbedding, textIndexDimension)) {
-          throw new Error(`Text embedding dimension mismatch: expected ${textIndexDimension}, got ${textEmbedding.length}`);
-        }
-
-        if (!validateEmbeddingDimension(visualEmbedding, visualIndexDimension)) {
-          throw new Error(`Visual embedding dimension mismatch: expected ${visualIndexDimension}, got ${visualEmbedding.length}`);
-        }
 
         const createdCard = await prisma.card.create({
           data: cardDataWithImageUrl
