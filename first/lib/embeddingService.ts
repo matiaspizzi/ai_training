@@ -1,8 +1,7 @@
 import { type FeatureExtractionPipeline, type ImageFeatureExtractionPipeline, pipeline } from '@xenova/transformers';
 
 
-const TEXT_EMBEDDING_MODEL = 'Xenova/all-MiniLM-L6-v2';
-const VISION_MODEL = 'Xenova/clip-vit-base-patch16';
+const MODEL = 'Xenova/clip-vit-base-patch32';
 
 let textEmbedder: FeatureExtractionPipeline | null = null;
 let imageEmbedder: ImageFeatureExtractionPipeline | null = null;
@@ -11,14 +10,14 @@ export async function initializeEmbedders() {
   if (!textEmbedder) {
     textEmbedder = await pipeline(
       "feature-extraction",
-      TEXT_EMBEDDING_MODEL
+      MODEL
     );
   }
 
   if (!imageEmbedder) {
     imageEmbedder = await pipeline(
       'image-feature-extraction',
-      VISION_MODEL
+      MODEL
     );
   }
 }
@@ -27,7 +26,7 @@ export async function getTransformTextEmbeddings(descriptiveText: string[]): Pro
   try{
     await initializeEmbedders();
     if (!textEmbedder) {
-      throw new Error("Pipeline de texto no inicializado.");
+      throw new Error("Pipeline not initialized.");
     }
     if (descriptiveText.length === 0) {
       return [];
@@ -45,7 +44,7 @@ export async function getTransformImageEmbeddings(imageUrl: string): Promise<num
   try {
     await initializeEmbedders();
     if (!imageEmbedder) {
-      throw new Error("Pipeline de imagen no inicializado.");
+      throw new Error("Pipeline not initialized.");
     }
     const output = await imageEmbedder(imageUrl);
     console.log("Image embedding generated");

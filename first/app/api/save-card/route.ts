@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from '../../../lib/prisma';
 import { pc } from '../../../lib/pinecone';
-import { getTransformTextEmbeddings, getTransformImageEmbeddings, initializeEmbedders } from '../../../lib/embeddingService';
+import { getTransformTextEmbeddings, getTransformImageEmbeddings } from '../../../lib/embeddings';
 import { z } from 'zod';
 import { NbaCardCreateSchema, NbaCardSchemaDTO } from './schema'; 
 import { uploadBase64ImageToS3, deleteImageFromS3, BUCKET_NAME } from '../../../lib/s3';
+import { text } from "stream/consumers";
 
 const SaveCardSchema = z.object({
   cards: z.array(NbaCardSchemaDTO),
@@ -16,8 +17,6 @@ const generateDescriptiveText = (card: z.infer<typeof NbaCardSchemaDTO>): string
 
 
 export async function POST(req: Request) {
-  await initializeEmbedders();
-
   try {
     const body = await req.json();
     const parsed = SaveCardSchema.safeParse(body.data);
@@ -30,6 +29,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // TODO: Convert this to bulk store
     const processingPromises = parsed.data.cards.map(async (cardData) => {
       let imageS3Key: string = '';
       let cardId: string = '';
@@ -44,10 +44,13 @@ export async function POST(req: Request) {
           imageUrl,
         };
 
-        const [textEmbedding, visualEmbedding] = await Promise.all([
+        let [textEmbedding, visualEmbedding] = await Promise.all([
           getTransformTextEmbeddings([descriptiveText]),
           getTransformImageEmbeddings(cardDataWithImageUrl.imageUrl),
         ]);
+
+        textEmbedding = textEmbedding as number[];
+        visualEmbedding = visualEmbedding as number[];
 
         const createdCard = await prisma.card.create({
           data: cardDataWithImageUrl
