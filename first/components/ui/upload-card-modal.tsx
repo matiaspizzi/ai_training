@@ -2,6 +2,7 @@ import {
   Dialog,
   DialogContent,
   DialogFooter,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -127,6 +128,7 @@ export function UploadCardModal({
         {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
+        <DialogTitle>Scan NBA Cards</DialogTitle>
         <div className="flex mt-6 flex-col mx-auto justify-between items-center gap-20  border-slate-800 rounded-xl" >
 
           <div className='w-full p-4 text-center'>

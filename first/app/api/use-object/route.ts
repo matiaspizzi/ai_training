@@ -3,6 +3,7 @@ import { streamObject } from 'ai';
 import { cardGradeSchema } from "./schema";
 import { NextResponse } from "next/server";
 import { systemPrompt } from "./prompts";
+import { handleApiError } from '@/lib/api-utils';
 
 export const maxDuration = 30;
 
@@ -42,7 +43,6 @@ export async function POST(req: Request) {
 
     return result.toTextStreamResponse();
   } catch (error) {
-    console.error("Error:", error);
-    return NextResponse.json({ error: error }, { status: 500 });
+    return handleApiError(error);
   }
 }

@@ -14,7 +14,7 @@ export function CardDetails({ card, img }: CardDetailsProps) {
   }
 
   return (
-    <div className="flex h-[260px]">
+    <div className="flex h-[260px] min-w-full">
       <Image className="object-cover min-w-[170px]" width={170} height={260} src={img} alt="Card Image" />
       <div className="border border-slate-800 rounded-r-lg p-4 text-left w-full">
         <CopyButton string={JSON.stringify(card, null, 2)} description='Copy JSON'/>
