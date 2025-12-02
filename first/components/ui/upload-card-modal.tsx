@@ -28,25 +28,44 @@ import { NbaCardSchemaDTO } from '../../app/api/save-card/schema';
 
 export function UploadCardModal({
   children,
+  maxFiles,
+  onContinueLabel,
 }: {
   children: React.ReactNode;
+  maxFiles?: number;
+  onContinueLabel: string;
 }) {
-  const { object, isLoading, error, submit } = useObject({
+  const { object, isLoading, error, submit, clear } = useObject({
     api: '/api/use-object',
     schema: cardGradeSchema,
   });
+
   const [files, setFiles] = useState<FileList | undefined>();
   const [sentFiles, setSentFiles] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [errorUpload, setErrorUpload] = useState("");
+  const [errorSave, setErrorSave] = useState<string[]>([]);
 
   const handleDrop = (uploadedFiles: File[] | null) => {
     if (!uploadedFiles) return;
-    const existingFiles = files ? fileListToArray(files) : [];
-    const newFiles = uploadedFiles;
-    const allFiles = [...existingFiles, ...newFiles];
-    setFiles(arrayToFileList(allFiles));
+
+    const limit = maxFiles ?? 1;
+
+    if (limit === 1) {
+      setFiles(arrayToFileList(uploadedFiles.slice(0, 1)));
+    } else {
+      const existingFiles = files ? fileListToArray(files) : [];
+      const newFiles = uploadedFiles;
+      const allFiles = [...existingFiles, ...newFiles].slice(0, limit);
+      setFiles(arrayToFileList(allFiles));
+    }
+
+    clear();
+    setSentFiles([]);
+    setErrorUpload("");
+    setIsSaving(false);
+    setIsSaved(false);
   };
 
   const handleRemoveFile = (index: number) => {
@@ -69,16 +88,20 @@ export function UploadCardModal({
           };
         })
       );
-      setIsSaved(false);
+      setIsSaving(false);
       setErrorUpload("");
+      setErrorSave([]);
       setSentFiles(base64Images.map(img => img.data));
+      setFiles(undefined);
 
       await submit({ images: base64Images });
-      setFiles(undefined);
     }
   };
 
   const handleSubmitSave = async () => {
+    setErrorUpload("");
+    setIsSaved(false);
+    setIsSaving(true);
     if (object && object.length > 0) {
       const dataToSaveArray = object
         .map((obj, index) => {
@@ -96,13 +119,9 @@ export function UploadCardModal({
         .filter((data): data is z.infer<typeof NbaCardSchemaDTO> => data !== null);
 
       if (dataToSaveArray.length === 0) {
-        setErrorUpload("No valid cards to save.");
+        setErrorUpload("No valid cards to send.");
         return;
       }
-
-      setIsSaving(true);
-      setErrorUpload("");
-      setIsSaved(false);
 
       const response = await fetch('/api/save-card', {
         method: 'POST',
@@ -110,100 +129,92 @@ export function UploadCardModal({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ data: { cards: dataToSaveArray } }),
-      });
+      }).then((response) => { return response.json() });
 
-      if (!response.ok) {
-        setErrorUpload(response.statusText);
-      } else {
-        setIsSaved(true);
+      if (response.errors) {
+        setErrorSave(response.errors);
       }
+      setIsSaved(true);
       setIsSaving(false);
     }
   };
-
 
   return (
     <Dialog>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl min-h-[80vh]">
         <DialogTitle>Scan NBA Cards</DialogTitle>
-        <div className="flex mt-6 flex-col mx-auto justify-between items-center gap-20  border-slate-800 rounded-xl" >
 
-          <div className='w-full p-4 text-center'>
-
-            <div className="px-4 max-h-[50vh] overflow-y-auto scrollbar gap-4 flex flex-col w-full items-center justify-center">
-              {!isLoading && !error && !object && <p className="text-slate-400">Upload images of NBA cards graded by PSA.</p>}
-
-              {isLoading && !object &&
-                <div className="flex w-full max-w-xs flex-col gap-4 [--radius:1rem]">
-                  <Item variant="muted">
-                    <ItemMedia>
-                      <Spinner />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle className="line-clamp-1">Uploading images...</ItemTitle>
-                    </ItemContent>
-                  </Item>
-                </div>}
-
-              {error && <p className="text-red-500">Error: {error.message}</p>}
-
-              {object && object.map((obj, index) => {
-                if (obj) {
-                  return (
-                    <CardDetails
-                      key={index}
-                      card={obj as Extract<typeof obj, { type: "grade" }>}
-                      img={sentFiles[index] ?? ""}
-                    />
-                  );
-                }
-                return null;
-              })}
-            </div>
-          </div>
-
-          <div className='bottom-0'>
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                handleSubmit();
-              }}
-              className='flex w-full gap-2 p-4 items-end'
-            >
-              <Dropzone
-                accept={{
-                  'image/*': [],
-                  'application/pdf': []
-                }}
-                className='w-[500px] ml-11'
-                maxFiles={5}
-                onDrop={handleDrop}
-                onError={console.error}
-                onRemoveFile={handleRemoveFile}
-                src={files ? fileListToArray(files) : []}
-              >
-                <DropzoneEmptyState />
-                <DropzoneContent />
-              </Dropzone>
-
-              <div className='flex flex-col gap-2'>
-                <Button variant="outline" size="icon" aria-label="Submit" disabled={isLoading || !files || files.length === 0}>
-                  <ArrowUpIcon />
-                </Button>
-                <CopyButton string={JSON.stringify(object, null, 2)} description='Copy received JSON' disabled={!object || object.length === 0} />
-              </div>
-
-            </form>
-          </div>
+        <div className="px-4 min-h-[20vh] overflow-y-auto scrollbar gap-4 flex flex-col min-w-full items-center justify-center">
+          {!isLoading && !error && !object && <p className="text-slate-400">Upload images of NBA cards graded by PSA.</p>}
+          {isLoading && !object &&
+            <div className="flex w-full max-w-xs flex-col gap-4 [--radius:1rem]">
+              <Item variant="muted">
+                <ItemMedia>
+                  <Spinner />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle className="line-clamp-1">Sending data...</ItemTitle>
+                </ItemContent>
+              </Item>
+            </div>}
+          {error && <p className="text-red-500">Error: {error.message}</p>}
+          {object && object.map((obj, index) => {
+            if (obj) {
+              return (
+                <CardDetails
+                  key={index}
+                  card={obj as Extract<typeof obj, { type: "grade" }>}
+                  img={sentFiles[index] ?? ""}
+                />
+              );
+            }
+            return null;
+          })}
         </div>
-        {object && object.length > 0 && (
-          <DialogFooter className="flex items-center justify-center">
+
+
+        <DialogFooter className="items-center justify-center max-h-fit self-end">
+          <div className='flex flex-col gap-2'>
+            <div className='bottom-0 w-full'>
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  handleSubmit();
+                }}
+                className='flex w-full gap-2 p-4 items-end'
+              >
+                <Dropzone
+                  accept={{
+                    'image/*': [],
+                    'application/pdf': []
+                  }}
+                  className='w-[500px] ml-11'
+                  maxFiles={maxFiles}
+                  onDrop={handleDrop}
+                  onError={console.error}
+                  onRemoveFile={handleRemoveFile}
+                  src={files ? fileListToArray(files) : []}
+                >
+                  <DropzoneEmptyState />
+                  <DropzoneContent />
+                </Dropzone>
+
+                <div className='flex flex-col gap-2'>
+                  <Button variant="outline" size="icon" aria-label="Submit" disabled={isLoading || !files || files.length === 0}>
+                    <ArrowUpIcon />
+                  </Button>
+                  <CopyButton string={JSON.stringify(object, null, 2)} description='Copy received JSON' disabled={!object || object.length === 0} />
+                </div>
+              </form>
+            </div>
+            {errorSave?.length > 0 && <p className="text-red-500">Error saving cards: {JSON.stringify(errorSave)}</p>}
             {errorUpload && <p className="text-red-500">Error saving cards. Please try again. {errorUpload}</p>}
-            <Button disabled={isSaving || isSaved} className="min-w-[100px] flex items-center justify-center" onClick={handleSubmitSave}>{isSaving ? <Spinner /> : errorUpload ? <AlertCircleIcon /> : isSaved ? <CheckIcon /> : "Save Cards"}</Button>
-          </DialogFooter>)}
+            {object && object.length > 0 && (<Button disabled={isLoading || isSaved} className="w-[100px] flex items-center justify-center self-end" onClick={handleSubmitSave}>{isSaving ? <Spinner /> : errorUpload ? <AlertCircleIcon /> : isSaved ? <CheckIcon /> : onContinueLabel}</Button>)}
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

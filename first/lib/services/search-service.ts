@@ -1,3 +1,4 @@
+import logger from '../logger';
 import { pc } from '../pinecone';
 import { getTransformTextEmbeddings, getTransformImageEmbeddings } from '../embeddings';
 
@@ -41,15 +42,15 @@ export class SearchService {
     const textWeight = 0.5;
     const visualWeight = 0.5;
 
-    textMatches.forEach(match => {
+    for (const match of textMatches) {
       combinedMap.set(match.id, {
         id: match.id,
         score: (match.score || 0) * textWeight,
         metadata: match.metadata,
       });
-    });
+    }
 
-    visualMatches.forEach(match => {
+    for (const match of visualMatches) {
       const existing = combinedMap.get(match.id);
       if (existing) {
         existing.score += (match.score || 0) * visualWeight;
@@ -60,9 +61,10 @@ export class SearchService {
           metadata: match.metadata,
         });
       }
-    });
+    }
 
-    console.log(combinedMap)
+    logger.debug({ count: combinedMap.size }, 'Merged search results');
+
     return Array.from(combinedMap.values())
       .sort((a, b) => b.score - a.score)
       .slice(0, 10);

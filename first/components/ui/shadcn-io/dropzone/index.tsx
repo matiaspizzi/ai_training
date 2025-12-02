@@ -117,8 +117,6 @@ export type DropzoneContentProps = {
   className?: string;
 };
 
-const maxLabelItems = 3;
-
 export const DropzoneContent = ({
   children,
   className,

@@ -3,6 +3,8 @@ import { google } from "@ai-sdk/google"
 import { handleApiError } from '@/lib/api-utils';
 import { searchService } from '@/lib/services/search-service';
 
+import logger from '@/lib/logger';
+
 export const maxDuration = 30;
 
 const model = google("gemini-2.5-flash");
@@ -19,12 +21,12 @@ export async function POST(req: Request) {
 
     const lastMessage = messages[messages.length - 1];
     let context = "";
-    
+
     if (data?.image) {
       const searchResults = await searchService.searchByImage(data.image);
       context = `Found similar cards based on the uploaded image:\n${JSON.stringify(searchResults, null, 2)}`;
     } else if (lastMessage.role === 'user') {
-      console.log("searching by text")
+      logger.info("searching by text")
       const textContent = lastMessage.parts.filter(part => part.type === 'text').map(part => part.text).join('');
       const searchResults = await searchService.searchByText(textContent);
       context = `Found similar cards based on your query:\n${JSON.stringify(searchResults, null, 2)}`;
@@ -42,7 +44,7 @@ export async function POST(req: Request) {
       ${context}`
       }, ...convertToModelMessages(messages)],
     });
-    console.log("result", result);
+    logger.info("result stream created");
     return result.toTextStreamResponse();
   } catch (error) {
     return handleApiError(error);
